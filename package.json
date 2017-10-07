@@ -1,0 +1,36 @@
+{
+  "name": "meta-api-sdk",
+  "version": "0.1.0",
+  "description": "Meta API SDK",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon -w src --exec \"babel-node .\"",
+    "debug": "nodemon -w src --exec \"babel-node .\" --inspect",
+    "start": "node .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "mat250 <mat250.alter@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "request": "^2.83.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-preset-env": "^1.6.0",
+    "eslint": "^3.1.1",
+    "nodemon": "^1.9.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mat250/meta-api-sdk.git"
+  },
+  "keywords": [
+    "meta-api",
+    "api"
+  ],
+  "bugs": {
+    "url": "https://github.com/mat250/meta-api-sdk/issues"
+  },
+  "homepage": "https://github.com/mat250/meta-api-sdk#readme"
+}
