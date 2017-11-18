@@ -30,9 +30,9 @@ class Mapi {
    */
   launch(callback) {
     console.log("Ready to launch request");
-    console.log(this);
     if (this.json != null) {
       console.log("Launch request now")
+      let mapi_this = this;
       request({
         uri: this.url + "/search",
         method: 'POST',
@@ -43,6 +43,7 @@ class Mapi {
           callback(error);
         } else {
           console.log("Mapi Request goes fine ;)")
+          mapi_this._parseResponse(body.results);
           callback(null, body)
         }
       })
@@ -93,6 +94,174 @@ class Mapi {
       callback("Spell : Id not set or params not set or not an array");
     }
   }
+
+  /**
+   * Return objects of a specific type inside a Re
+   * @param {String} result_id 
+   * @param {String} type 
+   */
+  getObjectsByType(result_id, type) {
+    if (this.results[result_id] != null) {
+      if (this.results[result_id][type] != null) {
+        return this.results[result_id][type];
+      } else {
+        console.error("Type not found in this result");
+      }
+    } else {
+      console.error("Result not found");
+    }
+  }
+
+  /**
+   * Function to find easyly object by id
+   * @param {String} object_id
+   */
+  getObjectById(object_id) {
+    let link_ref = this.refTable[object_id];
+    if (link_ref != null) {
+      return this.results[link_ref.result_position][link_ref.object_type][link_ref.object_position];
+    }
+  }
+
+  /**
+   * Fonction to filter and find objects
+   */
+  filterObject() {
+
+  }
+
+  getAllResults() {
+    return this.results;
+  }
+
+  getParents(object_id) {
+    return this._getObjectsLinked(object_id, "parents");
+  }
+
+  getChildren(object_id) {
+    return this._getObjectsLinked(object_id, "children");
+  }
+
+  /**
+   * Private : function to get linked object. Used by getParents and getChildren
+   * @param {String} object_id 
+   * @param {String} type 
+   */
+  _getObjectsLinked(object_id, type) {
+    let foundObjects = {};
+    if (this.refTable[object_id] != null) {
+      this.refTable[object_id][type].forEach(link_id => {
+        let link_ref = this.refTable[link_id];
+        if (link_ref != null) {
+          let link_object = this.results[link_ref.result_position][link_ref.object_type][link_ref.object_position];
+          if (link_object != null) {
+            if (foundObjects[link_object._type] == null) {
+              foundObjects[link_object._type] = [];
+            }
+            foundObjects[link_object._type].push(link_object);
+          }
+        }
+      });
+      return foundObjects;
+    } else {
+      console.error("Ref of this object can't be found");
+    }
+  }
+
+  /**
+   * Parsing reponses to transport them into nice objects to use
+   * @param {Object} results 
+   */
+  _parseResponse(results) {
+    if (results != null) {
+      let refTable = {};
+      let newResults = {};
+      results.forEach((result, result_index) => {
+        let aRes = result;
+        refTable[result.id] = [];
+        Object.keys(aRes).forEach(type => {
+          if (type != "id") {
+            let objects = aRes[type];
+            objects.forEach((object, object_index) => {
+              object._type = type;
+              if (refTable[object.id] == null) {
+                refTable[object.id] = {
+                  result_position: result_index,
+                  object_position: object_index,
+                  object_type: type,
+                  parents: [],
+                  children: []
+                }
+              }
+            });
+
+          }
+        });
+        newResults[result.id] = aRes;
+      });
+      this.results = newResults;
+      this.refTable = refTable;
+
+      this._resolveLinksBetweenObjects();
+    } else {
+      console.error("result is null : sound like an network or server error...");
+    }
+
+  }
+
+  _resolveLinksBetweenObjects() {
+    Object.keys(this.results).forEach(result_id => {
+      Object.keys(this.results[result_id]).forEach(type => {
+        if (type != 'id') {
+          this.results[result_id][type].forEach(object => {
+            if (object.parents != null) {
+              object.parents.forEach(parent => {
+                //Looking for id in refTable
+                let parent_id = null;
+                let parent_type = null;
+                if (typeof (parent) === "string") {
+                  parent_id = parent;
+                  parent_type = "child";
+                } else {
+                  parent_id = parent.id;
+                  parent_type = "parent";
+                }
+                if (parent_id != null && parent_type != null && this.refTable[parent_id] != null) {
+                  switch (parent_type) {
+                    case "parent":
+                      this.refTable[parent_id].parents.push(object.id);
+                      break;
+
+                    case "child":
+                      this.refTable[parent_id].children.push(object.id);
+                      break;
+
+                    default:
+                      break;
+                  }
+                }
+                if (this.refTable[object.id] != null) {
+                  switch (parent_type) {
+                    case "parent":
+                      this.refTable[object.id].children.push(parent_id);
+                      break;
+
+                    case "child":
+                      this.refTable[object.id].parents.push(parent_id);
+                      break;
+
+                    default:
+                      break;
+                  }
+                }
+              });
+            }
+          });
+        }
+      });
+    });
+  }
+
 
 }
 
