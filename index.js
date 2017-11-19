@@ -179,7 +179,7 @@ class Mapi {
     if (results != null) {
       let refTable = {};
       let newResults = {};
-      results.forEach((result, result_index) => {
+      results.forEach(result => {
         let aRes = result;
         Object.keys(aRes).forEach(type => {
           if (type != "id") {
@@ -188,7 +188,7 @@ class Mapi {
               object._type = type;
               if (refTable[object.id] == null) {
                 refTable[object.id] = {
-                  result_position: result_index,
+                  result_position: result.id,
                   object_position: object_index,
                   object_type: type,
                   parents: [],
