@@ -110,6 +110,7 @@ class Mapi {
     } else {
       console.error("Result not found");
     }
+    return [];
   }
 
   /**
@@ -153,15 +154,17 @@ class Mapi {
       this.refTable[object_id][type].forEach(link_id => {
         let link_ref = this.refTable[link_id];
         if (link_ref != null) {
-          let link_object = this.results[link_ref.result_position][link_ref.object_type][link_ref.object_position];
-          if (link_object != null) {
-            if (foundObjects[link_object._type] == null) {
-              foundObjects[link_object._type] = [];
+          if (this.results[link_ref.result_position] != null && this.results[link_ref.result_position][link_ref.object_type] != null) {
+            let link_object = this.results[link_ref.result_position][link_ref.object_type][link_ref.object_position];
+            if (link_object != null) {
+              if (foundObjects[link_object._type] == null) {
+                foundObjects[link_object._type] = [];
+              }
+              foundObjects[link_object._type].push(link_object);
             }
-            foundObjects[link_object._type].push(link_object);
           }
         }
-      });
+      }, this);
       return foundObjects;
     } else {
       console.error("Ref of this object can't be found");
@@ -178,7 +181,6 @@ class Mapi {
       let newResults = {};
       results.forEach((result, result_index) => {
         let aRes = result;
-        refTable[result.id] = [];
         Object.keys(aRes).forEach(type => {
           if (type != "id") {
             let objects = aRes[type];
@@ -229,11 +231,13 @@ class Mapi {
                 if (parent_id != null && parent_type != null && this.refTable[parent_id] != null) {
                   switch (parent_type) {
                     case "parent":
-                      this.refTable[parent_id].parents.push(object.id);
+                      if (!this.refTable[parent_id].children.includes(object.id))
+                        this.refTable[parent_id].children.push(object.id);
                       break;
 
                     case "child":
-                      this.refTable[parent_id].children.push(object.id);
+                      if (!this.refTable[parent_id].parents.includes(object.id))
+                        this.refTable[parent_id].parents.push(object.id);
                       break;
 
                     default:
@@ -243,18 +247,20 @@ class Mapi {
                 if (this.refTable[object.id] != null) {
                   switch (parent_type) {
                     case "parent":
-                      this.refTable[object.id].children.push(parent_id);
+                      if (!this.refTable[object.id].parents.includes(parent_id))
+                        this.refTable[object.id].parents.push(parent_id);
                       break;
 
                     case "child":
-                      this.refTable[object.id].parents.push(parent_id);
+                      if (!this.refTable[object.id].children.includes(parent_id))
+                        this.refTable[object.id].children.push(parent_id);
                       break;
 
                     default:
                       break;
                   }
                 }
-              });
+              }, this);
             }
           });
         }
