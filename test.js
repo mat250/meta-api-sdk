@@ -16,44 +16,120 @@ var Mapi = require('./index.js');
 //   console.log(result)
 // })
 
-var mapi_sdk2 = new Mapi("prod");
+var mapi = new Mapi("prod");
 
-mapi_sdk2.import([
+mapi.import([
   {
-     "id":0, //On donne un ID au choix à notre objet
-     "type":"Geo", //On indique le type d'objet que l'on souhaite récupérer sur Meta API (voir section "Catalogue")
-     "params":[ //On va donner quelques paramètres à l'API
-        {"name":"address","value":"1 rue de Rivoli 75001 Paris"} //Une adresse
-     ]
-  },
- {
-     "id":1, //Un deuxième élément similaire au 1er, avec une autre adresse
-     "type":"Geo",
-     "params":[
-        {"name":"address","value":"156 av des Champs-Elysées 75008 Paris"}
-     ]
+    "id": 1,
+    "type": "Geo",
+    "api_full_path": "https://maps.googleapis.com/maps/api/geocode/json",
+    "params": [
+      {
+        "name": "address",
+        "value": "1 rue de rivoli, 75001 Paris"
+      }
+    ]
   },
   {
-     "id":2, //Notre troisième élément qui va connecter les deux premiers
-     "type":"Transport", //On recherche un transport
-     "api_full_path":"https://api.uber.com/v1/estimates/price", //On précise que l'on souhaite utiliser l'endpoint de Uber
-     "params":[
-       {"name":"start_latitude","connect_to":0}, //Le point de départ va être connecté à l'élément 0
-       {"name":"start_longitude", "connect_to":0},
-       {"name":"end_latitude", "connect_to":1}, //Le point d'arrivée à l'élément 1
-       {"name":"end_longitude", "connect_to":1}
-     ]
+    "id": 2,
+    "type": "Place",
+    "api_full_path": "https://maps.googleapis.com/maps/api/place/nearbysearch/json",
+    "params": [
+      {
+        "name": "location",
+        "connect_to": 1
+      },
+      {
+        "name": "type",
+        "value": "restaurant"
+      },
+      {
+        "name": "radius",
+        "value": 500
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "type": "Place",
+    "api_full_path": "https://maps.googleapis.com/maps/api/place/details/json",
+    "params": [
+      {
+        "name": "placeid",
+        "connect_to": 2
+      },
+      {
+        "name": "language",
+        "value": "fr"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "type": "Geo",
+    "api_full_path": "https://maps.googleapis.com/maps/api/geocode/json",
+    "params": [
+      {
+        "name": "address",
+        "value": "1 rue des Poissonniers, 75018 Paris"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "type": "Transport",
+
+    "params": [
+      {
+        "name": "start_latitude",
+        "connect_to": 4
+      },
+      {
+        "name": "start_longitude",
+        "connect_to": 4
+      },
+      {
+        "name": "end_latitude",
+        "connect_to": 2
+      },
+      {
+        "name": "end_longitude",
+        "connect_to": 2
+      }
+    ]
   }
 ]);
 
-mapi_sdk2.launch((err, result) => {
+mapi.launch((err, result) => {
   if (err) console.error(err);
   // console.log(result);
   // console.log(mapi_sdk2.getResults());
-  let start_geo = mapi_sdk2.getAllResults()["0"].Geo[0];
-  let geo_by_id = mapi_sdk2.getObjectById(start_geo.id);
-  let children_geo = mapi_sdk2.getChildren(start_geo.id);
-  console.log("plop");
+  let myResults = [];
+
+  //Creating new object
+
+  mapi.getAllResults()["3"].Place.forEach(function (place) {
+    if (place.rating >= 3.8) {
+      delete place.photos;
+      delete place.reviews;
+      myResults.push(place);
+    }
+  }, this);
+
+  //Using Meta API package to find related Uber
+  myResults.forEach(place => {
+    //Getting parent place (corresponding to ID 2)
+    let placeParents = mapi.getParents(place.id);
+    if (placeParents.Place[0] != null) {
+      //Getting all children generated from this place
+      let children = mapi.getChildren(placeParents.Place[0].id);
+      if (children != null) {
+        //We take all the children which has as type "Uber"
+        let ubers = children.Transport;
+        console.log()
+      }
+    }
+  });
 })
 
-console.log(mapi_sdk2);
+console.log(mapi);

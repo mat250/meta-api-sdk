@@ -192,7 +192,8 @@ class Mapi {
                   object_position: object_index,
                   object_type: type,
                   parents: [],
-                  children: []
+                  children: [],
+                  links: []
                 }
               }
             });
@@ -205,10 +206,45 @@ class Mapi {
       this.refTable = refTable;
 
       this._resolveLinksBetweenObjects();
+      this._transferLinksBetweenObjects();
     } else {
       console.error("result is null : sound like an network or server error...");
     }
 
+  }
+
+  _transferLinksBetweenObjects() {
+    Object.keys(this.results).forEach(result_id => {
+      Object.keys(this.results[result_id]).forEach(type => {
+        if (type != 'id') {
+          this.results[result_id][type].forEach(object => {
+            if (object.parents != null) {
+              object.parents.forEach(parent => {
+                //Looking for id in refTable
+                let parent_id = null;
+                let parent_type = null;
+                if (typeof (parent) === "string") {
+                  parent_id = parent;
+                  parent_type = "parent";
+                } else {
+                  parent_id = parent.id;
+                  parent_type = "link";
+                }
+                
+                if (this.refTable[object.id] != null && parent_type == "link") {
+                  this._fillAnArray(this.refTable[parent_id].parents, this.refTable[object.id].parents, [object.id, parent_id]);
+                  this._fillAnArray(this.refTable[parent_id].children, this.refTable[object.id].children, [object.id, parent_id]);
+                }
+
+                if (this.refTable[object.id] == null || this.refTable[parent_id] == null) {
+                  console.error("Object missing in ref table");
+                }
+              }, this);
+            }
+          });
+        }
+      });
+    });
   }
 
   _resolveLinksBetweenObjects() {
@@ -223,42 +259,20 @@ class Mapi {
                 let parent_type = null;
                 if (typeof (parent) === "string") {
                   parent_id = parent;
-                  parent_type = "child";
+                  parent_type = "parent";
                 } else {
                   parent_id = parent.id;
-                  parent_type = "parent";
+                  parent_type = "link";
                 }
-                if (parent_id != null && parent_type != null && this.refTable[parent_id] != null) {
-                  switch (parent_type) {
-                    case "parent":
-                      if (!this.refTable[parent_id].children.includes(object.id))
-                        this.refTable[parent_id].children.push(object.id);
-                      break;
 
-                    case "child":
-                      if (!this.refTable[parent_id].parents.includes(object.id))
-                        this.refTable[parent_id].parents.push(object.id);
-                      break;
-
-                    default:
-                      break;
-                  }
+                if (this.refTable[object.id] != null && parent_type == "parent") {
+                  this.refTable[object.id].parents.push(parent_id);
                 }
-                if (this.refTable[object.id] != null) {
-                  switch (parent_type) {
-                    case "parent":
-                      if (!this.refTable[object.id].parents.includes(parent_id))
-                        this.refTable[object.id].parents.push(parent_id);
-                      break;
-
-                    case "child":
-                      if (!this.refTable[object.id].children.includes(parent_id))
-                        this.refTable[object.id].children.push(parent_id);
-                      break;
-
-                    default:
-                      break;
-                  }
+                if (this.refTable[parent_id] != null && parent_type == "parent") {
+                  this.refTable[parent_id].children.push(object.id);
+                }
+                if (this.refTable[object.id] != null && parent_type == "link") {
+                  this.refTable[object.id].links.push(parent_id);
                 }
               }, this);
             }
@@ -268,6 +282,15 @@ class Mapi {
     });
   }
 
+  _fillAnArray(target, source, exclude) {
+    if (target != null && Array.isArray(target) && source != null && Array.isArray(source)) {
+      source.forEach(element => {
+        if (!target.includes(element) && !exclude.includes(element)) {
+          target.push(element);
+        }
+      });
+    }
+  }
 
 }
 
