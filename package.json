@@ -1,6 +1,6 @@
 {
   "name": "meta-api-sdk",
-  "version": "0.3.3",
+  "version": "0.4",
   "description": "Meta API SDK",
   "main": "index.js",
   "scripts": {
@@ -12,7 +12,8 @@
   "author": "mat250 <mat250.alter@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "request": "^2.83.0"
+    "request": "^2.83.0",
+    "request-promise-native": "^1.0.5"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",

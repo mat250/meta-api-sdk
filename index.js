@@ -1,4 +1,5 @@
-var request = require('request');
+const request = require('request');
+const requestPromise = require('request-promise-native');
 
 class Mapi {
 
@@ -49,6 +50,27 @@ class Mapi {
       })
     } else {
       callback("Request as json is not set. Please import or create a new node");
+    }
+  }
+ 
+  async launchAsync() {
+    console.log("Ready to launch async request");
+    if (this.json != null) {
+      console.log("Launch request now")
+      try {
+        const body = await requestPromise({
+          uri: this.url + "/search",
+          method: 'POST',
+          body: this.json,
+          json: true // Automatically parses the JSON string in the response
+        });
+        this._parseResponse(body.results);
+        return body;
+      } catch (error) {
+        throw error;
+      }
+    } else {
+      throw new Error("Request as json is not set. Please import or create a new node");
     }
   }
 
